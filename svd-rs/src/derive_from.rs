@@ -183,16 +183,14 @@ impl DeriveFrom for FieldInfo {
 impl DeriveFrom for DimElement {
     fn derive_from(&self, other: &Self) -> Self {
         let Self {
-            dim,
-            dim_increment,
+            dim: _,           // mandatory
+            dim_increment: _, // mandatory
             dim_index,
             dim_name,
             dim_array_index,
         } = other;
 
         let mut derived = self.clone();
-        derived.dim = *dim;
-        derived.dim_increment = *dim_increment;
         derived.dim_index = derived.dim_index.or_else(|| dim_index.clone());
         derived.dim_name = derived.dim_name.or_else(|| dim_name.clone());
         derived.dim_array_index = derived.dim_array_index.or_else(|| dim_array_index.clone());
