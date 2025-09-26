@@ -18,15 +18,31 @@ pub trait DeriveFrom {
 
 impl DeriveFrom for ClusterInfo {
     fn derive_from(&self, other: &Self) -> Self {
+        // "Remarks: When deriving a cluster, it is mandatory to specify at least the
+        // <name>, the <description>, and the <addressOffset>."
+        let Self {
+            name: _,
+            description: _,
+            address_offset: _,
+            alternate_cluster,
+            header_struct_name,
+            default_register_properties,
+            children,
+            derived_from: _,
+        } = other;
+
         let mut derived = self.clone();
+        derived.alternate_cluster = derived
+            .alternate_cluster
+            .or_else(|| alternate_cluster.clone());
         derived.default_register_properties = derived
             .default_register_properties
-            .derive_from(&other.default_register_properties);
+            .derive_from(default_register_properties);
         derived.header_struct_name = derived
             .header_struct_name
-            .or_else(|| other.header_struct_name.clone());
+            .or_else(|| header_struct_name.clone());
         if derived.children.is_empty() {
-            derived.children = other.children.clone();
+            derived.children = children.clone();
         }
         derived
     }
@@ -34,10 +50,17 @@ impl DeriveFrom for ClusterInfo {
 
 impl DeriveFrom for EnumeratedValues {
     fn derive_from(&self, other: &Self) -> Self {
+        let Self {
+            name: _,
+            usage,
+            derived_from: _,
+            values,
+        } = other;
+
         let mut derived = self.clone();
-        derived.usage = derived.usage.or(other.usage);
+        derived.usage = derived.usage.or(*usage);
         if derived.values.is_empty() {
-            derived.values = other.values.clone();
+            derived.values = values.clone();
         }
         derived
     }
@@ -74,58 +97,105 @@ impl DeriveFrom for PeripheralInfo {
 
 impl DeriveFrom for RegisterInfo {
     fn derive_from(&self, other: &Self) -> Self {
+        // "Remarks: When deriving, it is mandatory to specify at least the <name>, the
+        // <description>, and the <addressOffset>. "
+        let Self {
+            name: _,
+            description: _,
+            address_offset: _,
+            display_name,
+            alternate_group,
+            alternate_register,
+            properties,
+            datatype,
+            modified_write_values,
+            write_constraint,
+            read_action,
+            fields,
+            derived_from: _,
+        } = other;
+
         let mut derived = self.clone();
-        derived.description = derived.description.or_else(|| other.description.clone());
-        derived.properties = derived.properties.derive_from(&other.properties);
-        derived.fields = derived.fields.or_else(|| other.fields.clone());
-        derived.write_constraint = derived.write_constraint.or(other.write_constraint);
-        derived.read_action = derived.read_action.or(other.read_action);
-        derived.modified_write_values = derived
-            .modified_write_values
-            .or(other.modified_write_values);
+        derived.display_name = derived.display_name.or_else(|| display_name.clone());
+        derived.alternate_group = derived.alternate_group.or_else(|| alternate_group.clone());
+        derived.alternate_register = derived
+            .alternate_register
+            .or_else(|| alternate_register.clone());
+        derived.properties = derived.properties.derive_from(&properties);
+        derived.datatype = derived.datatype.or_else(|| datatype.clone());
+        derived.fields = derived.fields.or_else(|| fields.clone());
+        derived.modified_write_values = derived.modified_write_values.or(*modified_write_values);
+        derived.write_constraint = derived.write_constraint.or(*write_constraint);
+        derived.read_action = derived.read_action.or(*read_action);
         derived
     }
 }
 
 impl DeriveFrom for RegisterProperties {
     fn derive_from(&self, other: &Self) -> Self {
+        let Self {
+            size,
+            access,
+            protection,
+            reset_value,
+            reset_mask,
+        } = *other;
+
         let mut derived = *self;
-        derived.size = derived.size.or(other.size);
-        derived.access = derived.access.or(other.access);
-        derived.protection = derived.protection.or(other.protection);
-        derived.reset_value = derived.reset_value.or(other.reset_value);
-        derived.reset_mask = derived.reset_mask.or(other.reset_mask);
+        derived.size = derived.size.or(size);
+        derived.access = derived.access.or(access);
+        derived.protection = derived.protection.or(protection);
+        derived.reset_value = derived.reset_value.or(reset_value);
+        derived.reset_mask = derived.reset_mask.or(reset_mask);
         derived
     }
 }
 
 impl DeriveFrom for FieldInfo {
     fn derive_from(&self, other: &Self) -> Self {
+        // "Remarks: When deriving, it is mandatory to specify at least the <name> and
+        // <description>."
+        let Self {
+            name: _,
+            description: _,
+            bit_range: _, // TODO: derive bit_range.
+            access,
+            modified_write_values,
+            write_constraint,
+            read_action,
+            enumerated_values,
+            derived_from,
+        } = other;
+
         let mut derived = self.clone();
-        derived.description = derived.description.or_else(|| other.description.clone());
-        derived.access = derived.access.or(other.access);
+        derived.access = derived.access.or(*access);
         if derived.enumerated_values.is_empty() {
-            derived.enumerated_values = other.enumerated_values.clone();
+            derived.enumerated_values = enumerated_values.clone();
         }
-        derived.write_constraint = derived.write_constraint.or(other.write_constraint);
-        derived.read_action = derived.read_action.or(other.read_action);
-        derived.modified_write_values = derived
-            .modified_write_values
-            .or(other.modified_write_values);
+        derived.write_constraint = derived.write_constraint.or(*write_constraint);
+        derived.read_action = derived.read_action.or(*read_action);
+        derived.modified_write_values = derived.modified_write_values.or(*modified_write_values);
+        derived.derived_from = derived.derived_from.or_else(|| derived_from.clone());
         derived
     }
 }
 
 impl DeriveFrom for DimElement {
     fn derive_from(&self, other: &Self) -> Self {
+        let Self {
+            dim,
+            dim_increment,
+            dim_index,
+            dim_name,
+            dim_array_index,
+        } = other;
+
         let mut derived = self.clone();
-        derived.dim = other.dim;
-        derived.dim_increment = other.dim_increment;
-        derived.dim_index = derived.dim_index.or_else(|| other.dim_index.clone());
-        derived.dim_name = derived.dim_name.or_else(|| other.dim_name.clone());
-        derived.dim_array_index = derived
-            .dim_array_index
-            .or_else(|| other.dim_array_index.clone());
+        derived.dim = *dim;
+        derived.dim_increment = *dim_increment;
+        derived.dim_index = derived.dim_index.or_else(|| dim_index.clone());
+        derived.dim_name = derived.dim_name.or_else(|| dim_name.clone());
+        derived.dim_array_index = derived.dim_array_index.or_else(|| dim_array_index.clone());
         derived
     }
 }
