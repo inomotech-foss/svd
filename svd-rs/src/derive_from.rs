@@ -68,28 +68,44 @@ impl DeriveFrom for EnumeratedValues {
 
 impl DeriveFrom for PeripheralInfo {
     fn derive_from(&self, other: &Self) -> Self {
+        let Self {
+            name: _,
+            display_name,
+            version,
+            description,
+            alternate_peripheral,
+            group_name,
+            prepend_to_name,
+            append_to_name,
+            header_struct_name,
+            base_address: _,
+            default_register_properties,
+            address_block,
+            interrupt,
+            registers,
+            derived_from: _,
+        } = other;
+
         let mut derived = self.clone();
-        derived.version = derived.version.or_else(|| other.version.clone());
-        derived.description = derived.description.or_else(|| other.description.clone());
-        derived.group_name = derived.group_name.or_else(|| other.group_name.clone());
-        derived.prepend_to_name = derived
-            .prepend_to_name
-            .or_else(|| other.prepend_to_name.clone());
-        derived.append_to_name = derived
-            .append_to_name
-            .or_else(|| other.append_to_name.clone());
+        derived.display_name = derived.display_name.or_else(|| display_name.clone());
+        derived.version = derived.version.or_else(|| version.clone());
+        derived.description = derived.description.or_else(|| description.clone());
+        derived.alternate_peripheral = derived
+            .alternate_peripheral
+            .or_else(|| alternate_peripheral.clone());
+        derived.group_name = derived.group_name.or_else(|| group_name.clone());
+        derived.prepend_to_name = derived.prepend_to_name.or_else(|| prepend_to_name.clone());
+        derived.append_to_name = derived.append_to_name.or_else(|| append_to_name.clone());
         derived.header_struct_name = derived
             .header_struct_name
-            .or_else(|| other.header_struct_name.clone());
+            .or_else(|| header_struct_name.clone());
         derived.default_register_properties = derived
             .default_register_properties
-            .derive_from(&other.default_register_properties);
-        derived.registers = derived.registers.or_else(|| other.registers.clone());
-        derived.address_block = derived
-            .address_block
-            .or_else(|| other.address_block.clone());
+            .derive_from(&default_register_properties);
+        derived.registers = derived.registers.or_else(|| registers.clone());
+        derived.address_block = derived.address_block.or_else(|| address_block.clone());
         if derived.interrupt.is_empty() {
-            derived.interrupt = other.interrupt.clone();
+            derived.interrupt = interrupt.clone();
         }
         derived
     }
